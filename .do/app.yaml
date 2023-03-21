@@ -1,0 +1,6 @@
+name:
+services:
+  - name: bot
+    github:
+      repo: jakealves/atlas-game-lookout
+      branch: main
