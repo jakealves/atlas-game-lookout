@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,12 +14,16 @@ import (
 func TestPrintWebhook(t *testing.T) {
 	var str bytes.Buffer
 	log.SetOutput(&str)
-	req := httptest.NewRequest(http.MethodPost, "/upper?word=abc", nil)
+	discordWebookJSON := map[string]interface{}{
+		"content": "**Eastern Order (1672657922)**\nDay 28255, 04:01:05: Crew member Lyon Lint - Lvl 34 was killed by an Alpha Elephant - Lvl 223!\n",
+	}
+	body, _ := json.Marshal(discordWebookJSON)
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
 	err := lookout.PrintWebhook(req)
 	if err != nil {
 		t.Errorf("Expected error to be nil got %v", err)
 	}
-	if str.String() == "" {
+	if str.String() != "" {
 		t.Errorf("Expected log to not be empty %v", str.String())
 	}
 }
