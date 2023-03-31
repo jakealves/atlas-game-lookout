@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -47,9 +51,89 @@ func (b *Bot) messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("Recieved Ping from %s, sending 'Pong'", m.Author.Username)
 		b.SendMessage(m.ChannelID, "pong")
 	}
+	if strings.Contains(m.Content, b.Prefix+"maptile") {
+		log.Printf("Recieved maptile from %s, generating maptile", m.Author.Username)
+		label, zoom, long, lat, shift := ParseMapTileCommand(m.Content)
+
+		if long == 0.0 || lat == 0.0 {
+			b.SendMessage(m.ChannelID, "I need a long and a lat to generate a tile.")
+			return
+		}
+
+		generatedTilePath, err := GenerateTileFromCoordinates(label, zoom, long, lat, shift)
+		if err != nil {
+			log.Printf("Error sending generated tile: %v", err)
+		}
+		generatedTile, err := os.Open(generatedTilePath)
+		if err != nil {
+			log.Printf("Error reading generated tile: %v", err)
+		}
+		defer generatedTile.Close()
+		file := &discordgo.File{
+			Name:        generatedTilePath,
+			ContentType: "image/png",
+			Reader:      generatedTile,
+		}
+		_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+			Files: []*discordgo.File{file},
+		})
+		if err != nil {
+			log.Printf("Error sending generated image: %v", err)
+		}
+	}
 }
 
 func (b *Bot) SendMessage(channel string, message string) {
 	log.Printf("Sending message to %s: %s", channel, message)
 	_, _ = b.Session.ChannelMessageSend(channel, message)
+}
+
+func ParseMapTileCommand(message string) (label string, zoom int, long float64, lat float64, shift int) {
+	var err error
+
+	labelRe := regexp.MustCompile(`(?m)label:"(.+)"`)
+	labelMatch := labelRe.FindAllStringSubmatch(message, -1)
+	if len(labelMatch) > 0 {
+		label = labelMatch[0][1]
+	}
+
+	zoomRe := regexp.MustCompile(`(?m)zoom:(\d+)`)
+	zoomMatch := zoomRe.FindAllStringSubmatch(message, -1)
+	if len(zoomMatch) > 0 {
+		zoom, err = strconv.Atoi(zoomMatch[0][1])
+		if err != nil {
+			log.Printf("Error parsing zoom as int: %v", err)
+		}
+	}
+	if zoom == 0 {
+		zoom = 64
+	}
+
+	longRe := regexp.MustCompile(`(?m)long:(.\d+\.\d+)`)
+	longSlice := longRe.FindAllStringSubmatch(message, -1)
+	if len(longSlice) > 0 {
+		long, err = strconv.ParseFloat(longSlice[0][1], 64)
+		if err != nil {
+			log.Printf("Error parsing long as float: %v", err)
+		}
+	}
+
+	latRe := regexp.MustCompile(`(?m)lat:(.\d+\.\d+)`)
+	latSlice := latRe.FindAllStringSubmatch(message, -1)
+	if len(latSlice) > 0 {
+		lat, err = strconv.ParseFloat(latSlice[0][1], 64)
+		if err != nil {
+			log.Printf("Error parsing lat as float: %v", err)
+		}
+	}
+
+	shiftRe := regexp.MustCompile(`(?m)shift:(\d+)`)
+	shiftMatch := shiftRe.FindAllStringSubmatch(message, -1)
+	if len(shiftMatch) > 0 {
+		shift, err = strconv.Atoi(shiftMatch[0][1])
+		if err != nil {
+			log.Printf("Error parsing shift as int: %v", err)
+		}
+	}
+	return label, zoom, long, lat, shift
 }

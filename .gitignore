@@ -1,2 +1,4 @@
 .env
 tiles/*/*.png
+__MACOSX
+.DS_Store

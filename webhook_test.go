@@ -23,8 +23,8 @@ func TestPrintWebhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil got %v", err)
 	}
-	if str.String() != "" {
-		t.Errorf("Expected log to not be empty %v", str.String())
+	if str.String() == "" {
+		t.Errorf("Expected log to be empty %v", str.String())
 	}
 }
 
@@ -45,4 +45,8 @@ func TestRelayWebhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected error to be nil got %v", err)
 	}
+}
+
+func TestExtractEvents(t *testing.T) {
+	lookout.ExtractEvents("**Eastern Order (1672657922)**\nDay 28537, 01:46:42: Crew member Liv Kern - Lvl 40 was killed by TheOsky In Bike - Lvl 73 (Los Cheetos)!\nDay 28537, 01:50:51: Crew member Alfred Kern - Lvl 47 was killed by TheOsky In Bike - Lvl 73 (Los Cheetos)!\nDay 28537, 01:18:16: Alfred Kern claimed 'Crab - Lvl 45 (Crab)'!\n")
 }

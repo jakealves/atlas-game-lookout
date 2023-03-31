@@ -6,7 +6,14 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"regexp"
 )
+
+func ExtractEvents(message string) [][]string {
+	re := regexp.MustCompile(`(?mU)Day (\d+), (\d+\:\d+\:\d+)\: (.+)!`)
+	events := re.FindAllStringSubmatch(message, -1)
+	return events
+}
 
 func PrintWebhook(http_request *http.Request) error {
 	// Save a copy of this request for debugging.
