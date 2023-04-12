@@ -2,3 +2,4 @@
 tiles/*/*.png
 __MACOSX
 .DS_Store
+resources
